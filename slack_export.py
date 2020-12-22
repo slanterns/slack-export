@@ -19,7 +19,7 @@ def getReplies(channelId, timestamp, pageSize=100):
     lastTimestamp = None
 
     while True:
-        print("getHistory", channelId, len(messages))
+        print("getReplies", channelId, timestamp, len(messages))
         cumulativeRetryInSeconds = 2
         while cumulativeRetryInSeconds <= 100:
             batchError = None
@@ -129,6 +129,7 @@ def getHistory(pageableObject, channelId, pageSize = 100):
         for message in response["messages"]:
             if "thread_ts" in message:
                 messages.extend(getReplies(channelId, message["thread_ts"], pageSize))
+                sleep(1)
 
         if (response['has_more'] == True):
             # sys.stdout.write(".")
