@@ -19,24 +19,12 @@ def getReplies(channelId, timestamp, pageSize=100):
     lastTimestamp = None
 
     while True:
-        try:
-            response = conversationObject.replies(
-                channel=channelId,
-                ts=timestamp,
-                latest=lastTimestamp,
-                oldest=0,
-                limit=pageSize,
-            ).body
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 429:
-                retryInSeconds = int(e.response.headers["Retry-After"])
-                print(
-                    u"Rate limit hit. Retrying in {0} second{1}.".format(
-                        retryInSeconds, "s" if retryInSeconds > 1 else ""
-                    )
-                )
-                sleep(retryInSeconds)
-
+        print("getHistory", channelId, len(messages))
+        cumulativeRetryInSeconds = 2
+        while cumulativeRetryInSeconds <= 100:
+            batchError = None
+            retryInSeconds = 0
+            try:
                 response = conversationObject.replies(
                     channel=channelId,
                     ts=timestamp,
@@ -44,12 +32,30 @@ def getReplies(channelId, timestamp, pageSize=100):
                     oldest=0,
                     limit=pageSize,
                 ).body
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 429:
+                    batchError = "rate limit hit"
+                    retryInSeconds = int(e.response.headers["Retry-After"])
+            except Exception as e:
+                batchError = "exception: {0}".format(type(e).__name__)
+                retryInSeconds = cumulativeRetryInSeconds
+                cumulativeRetryInSeconds = cumulativeRetryInSeconds * 1.1
+
+            if batchError == None:
+                break
+
+            print(
+                "Error fetching history: {0}. Retrying in {1} second(s)".format(
+                    batchError, retryInSeconds
+                )
+            )
+            sleep(retryInSeconds)
 
         messages.extend(response["messages"])
 
         if response["has_more"] == True:
-            sys.stdout.write(".")
-            sys.stdout.flush()
+            # sys.stdout.write(".")
+            # sys.stdout.flush()
             lastTimestamp = messages[-1]["ts"]  # -1 means last element in a list
             sleep(1)  # Respect the Slack API rate limit
         else:
@@ -81,7 +87,8 @@ def getHistory(pageableObject, channelId, pageSize = 100):
     messages = []
     lastTimestamp = None
 
-    while(True):
+    while True:
+        print("getHistory", channelId, len(messages))
         cumulativeRetryInSeconds = 2
         while cumulativeRetryInSeconds <= 100:
             batchError = None
@@ -124,8 +131,8 @@ def getHistory(pageableObject, channelId, pageSize = 100):
                 messages.extend(getReplies(channelId, message["thread_ts"], pageSize))
 
         if (response['has_more'] == True):
-            sys.stdout.write(".")
-            sys.stdout.flush()
+            # sys.stdout.write(".")
+            # sys.stdout.flush()
             lastTimestamp = messages[-1]['ts'] # -1 means last element in a list
             sleep(1) # Respect the Slack API rate limit
         else:
