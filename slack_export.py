@@ -346,11 +346,12 @@ def bootstrapKeyValues():
 
     groups = slack.conversations.list(limit = 1000, types=('private_channel', 'mpim')).body['channels']
     print("Found {0} Private Channels or Group DMs".format(len(groups)))
+    sleep(1)
     # need to retrieve channel memberships for the slack-export-viewer to work
     for n in range(len(groups)):
         groups[n]["members"] = slack.conversations.members(limit=1000, channel=groups[n]['id']).body['members']
         print("Retrieved members of {0}".format(groups[n]['name']))
-    sleep(1)
+        sleep(0.1)
 
     dms = slack.conversations.list(limit = 1000, types=('im')).body['channels']
     print("Found {0} 1:1 DM conversations\n".format(len(dms)))
