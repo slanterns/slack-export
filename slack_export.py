@@ -286,7 +286,7 @@ def fetchDirectMessages(dms):
         print("Fetching 1:1 DMs with {0}".format(name))
         dmId = dm['id']
         mkdir(dmId)
-        messages = getHistory(slack.im, dm['id'])
+        messages = getHistory(slack.conversations, dm['id'])
         parseMessages( dmId, messages, "im" )
 
 def promptForGroups(groups):
